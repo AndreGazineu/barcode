@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZXing-Wasm Barcode Reader</title>
+    <style>
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #1e1e1e;
+            color: #c7c7c7;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 2rem;
+            color: #00aaff;
+        }
+
+        .drop-zone {
+            width: 300px;
+            height: 200px;
+            border: 2px dashed #00aaff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .drop-zone.dragging {
+            background-color: rgba(0, 170, 255, 0.2);
+        }
+
+        .drop-zone p {
+            color: #c7c7c7;
+            text-align: center;
+        }
+
+        #result {
+            font-size: 1rem;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Leitor de código de barras</h1>
+
+    <!-- Área de drag and drop -->
+    <div id="dropZone" class="drop-zone">
+        <p>Arraste sua imagem aqui ou clique para selecionar</p>
+    </div>
+
+    <!-- Área para exibir o resultado -->
+    <p id="result">Aguardando imagem...</p>
+
+    <!-- Script para incluir a biblioteca ZXing-Wasm -->
+    <script src="https://cdn.jsdelivr.net/npm/zxing-wasm@1/dist/iife/reader/index.js"></script>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const result = document.getElementById('result');
+
+        // Função para processar a imagem
+        async function processImage(file) {
+            const readerOptions = {
+                tryHarder: true,
+                formats: ["QRCode", "Code128", "EAN_13"], // Tipos de código suportados
+            };
+
+            try {
+                const readResults = await ZXingWASM.readBarcodesFromImageFile(file, readerOptions);
+
+                if (readResults.length > 0) {
+                    result.innerText = `Código detectado: ${readResults[0].text}`;
+                } else {
+                    result.innerText = 'Nenhum código de barras detectado.';
+                }
+            } catch (error) {
+                result.innerText = 'Erro ao processar a imagem.';
+                console.error('Erro:', error);
+            }
+        }
+
+        // Listener para o evento de clique para selecionar o arquivo
+        dropZone.addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.click();
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    processImage(file);
+                }
+            });
+        });
+
+        // Listener para eventos de drag and drop
+        dropZone.addEventListener('dragover', (event) => {
+            event.preventDefault();
+            dropZone.classList.add('dragging');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragging');
+        });
+
+        dropZone.addEventListener('drop', (event) => {
+            event.preventDefault();
+            dropZone.classList.remove('dragging');
+
+            const file = event.dataTransfer.files[0];
+            if (file) {
+                processImage(file);
+            }
+        });
+    </script>
+
+</body>
+</html>
